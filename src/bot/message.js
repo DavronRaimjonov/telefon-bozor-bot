@@ -1,13 +1,17 @@
 import Users from "../schmea/users.schema.js";
 import bot from "./bot.js";
-import { add_category, get_all_category } from "./helpers/category.js";
+import {
+  add_category,
+  get_all_category,
+  saveCategory,
+} from "./helpers/category.js";
 import { request_contact, start } from "./helpers/start.js";
 import { get_all_user } from "./helpers/users.js";
 
 bot.on("message", async (msg) => {
   const chatId = msg.from.id;
   const user = await Users.findOne({ chatId });
-  if (msg.text === "/start") {
+  if (msg.text === "/start") { 
     start(msg);
   }
   if (user) {
@@ -22,6 +26,9 @@ bot.on("message", async (msg) => {
     }
     if (user.action === "add_category") {
       add_category(msg);
+    }
+    if (user.action.includes("edit_category-")) {
+      saveCategory(chatId, msg.text);
     }
   }
 });

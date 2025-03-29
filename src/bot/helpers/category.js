@@ -2,6 +2,7 @@ import { text } from "express";
 import Category from "../../schmea/category.schema.js";
 import Users from "../../schmea/users.schema.js";
 import bot from "../bot.js";
+import Products from "../../schmea/products.schema.js";
 
 export const get_all_category = async (chatId, page = 1, messageId = null) => {
   const user = await Users.findOne({ chatId });
@@ -68,7 +69,6 @@ export const get_all_category = async (chatId, page = 1, messageId = null) => {
             err.response.body &&
             err.response.body.error_code === 400
           ) {
-            // Agar xabar o'zgarmagan bo'lsa, errorni e'tiborsiz qoldiramiz
             console.log("🔹 Xabar o‘zgarmagan, yangilanmadi.");
           } else {
             console.error("❌ Xatolik:", err);
@@ -142,4 +142,126 @@ export const pagination_category = async (chatId, data, messageId) => {
     { new: true }
   );
   get_all_category(chatId, page, messageId);
+};
+
+export const show_category = async (chatId, id) => {
+  const findCategory = await Category.findById(id);
+  const user = await Users.findOne({ chatId });
+  await Users.findOneAndUpdate(
+    user._id,
+    {
+      $set: { action: `category_${findCategory._id}` },
+    },
+    { new: true }
+  );
+
+  const userShowCategory = [];
+  const adminShowCategory = [
+    [
+      {
+        text: "Mahsulotni tahrirlash",
+        callback_data: `edit_category-${findCategory._id}`,
+      },
+      {
+        text: "Mahsulotni o'chirish",
+        callback_data: `del_category-${findCategory._id}`,
+      },
+    ],
+    [
+      {
+        text: "Yangi mahsulot",
+        callback_data: "new_product",
+      },
+    ],
+  ];
+  bot.sendMessage(chatId, `${findCategory.title} turkumidagi mahulotlar: `, {
+    reply_markup: {
+      inline_keyboard: user.admin ? adminShowCategory : userShowCategory,
+    },
+  });
+};
+
+export const deleteCategory = async (chatId, id) => {
+  const user = await Users.findOne({ chatId });
+  const category = await Category.findById(id);
+
+  if (!user.admin) {
+    return bot.sendMessage(chatId, "Sizga bunday amal bajarish mumkin emas !");
+  }
+  if (user.action !== "del_category") {
+    await Users.findOneAndUpdate(
+      user._id,
+      {
+        $set: { action: "del_category" },
+      },
+      { new: true }
+    );
+
+    bot.sendMessage(
+      chatId,
+      `Siz ${category.title} turkumini o'chirmoqchimisiz ?`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "Bekor qilish",
+                callback_data: `category_${category._id}`,
+              },
+            ],
+            [
+              {
+                text: "O'chirish",
+                callback_data: `del_category-${category._id}`,
+              },
+            ],
+          ],
+        },
+      }
+    );
+  } else {
+    await Products.deleteMany({ categoryId: id });
+    await Category.deleteOne({ _id: id });
+    bot.sendMessage(
+      chatId,
+      `${category.title} turkumi o'chirildi menyudan tanlang`
+    );
+  }
+};
+export const editCategory = async (chatId, id) => {
+  const user = await Users.findOne({ chatId });
+  const category = await Category.findById(id);
+
+  if (!user.admin) {
+    return bot.sendMessage(chatId, "Sizga bunday amal mumkin emas");
+  }
+
+  await Users.findOneAndUpdate(
+    user._id,
+    {
+      $set: { action: `edit_category-${category._id}` },
+    },
+    { new: true }
+  );
+  bot.sendMessage(chatId, "Turkum uchun yangi nom kiriting");
+};
+
+export const saveCategory = async (chatId, title) => {
+  console.log(title);
+  const user = await Users.findOne({ chatId });
+  await Users.findOneAndUpdate(
+    user._id,
+    {
+      $set: { action: `menu` },
+    },
+    { new: true }
+  );
+  const id = user.action.split("-")[1];
+  console.log(id);
+  await Category.findOneAndUpdate(
+    { _id: id },
+    { $set: { title } },
+    { new: true }
+  );
+  bot.sendMessage(chatId, "Turkum yangilandi menyudan tanlang" );
 };
