@@ -5,6 +5,7 @@ import {
   get_all_category,
   saveCategory,
 } from "./helpers/category.js";
+import { end_order, show_order } from "./helpers/order.js";
 import { add_products } from "./helpers/products.js";
 import { request_contact, start } from "./helpers/start.js";
 import { get_all_user } from "./helpers/users.js";
@@ -53,6 +54,14 @@ bot.on("message", async (msg) => {
     }
     if (user.action.includes("new_product_text")) {
       return add_products(chatId, msg.text, "text");
+    }
+    if (msg.location && user.action === "order") {
+      end_order(chatId, msg.location);
+    }
+  }
+  if (msg.text === "/cart") {
+    if (user) {
+      show_order(chatId);
     }
   }
 });

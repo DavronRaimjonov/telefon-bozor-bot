@@ -64,9 +64,19 @@ export const clear_draft_product = async () => {
   await Products.deleteMany({ status: 0 });
 };
 
-export const show_product = async (chatId, id) => {
+export const show_product = async (
+  chatId,
+  id,
+  counter = 1,
+  messageId = null
+) => {
   const product = await Products.findById(id);
   const user = await Users.findOne({ chatId });
+  await Users.findByIdAndUpdate(
+    user._id,
+    { $set: { action: `counter-1` } },
+    { new: true }
+  );
   const caption =
     `📱 <b>${product.title}</b>\n\n` +
     `💰 <b>Narxi:</b> ${
@@ -76,44 +86,53 @@ export const show_product = async (chatId, id) => {
     `📞 <b>Bog‘lanish:</b> <a href="tel:+998770224446">+998 77 022 44 46</a>\n\n` +
     `✅ <i>Sotib olish yoki batafsil ma'lumot uchun biz bilan bog'laning!</i>`;
 
-  bot.sendPhoto(chatId, product.img, {
-    caption,
-    parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "+",
-            callback_data: `increment_product-${product._id}`,
-          },
-          {
-            text: "0",
-            callback_data: "counter",
-          },
-          {
-            text: "-",
-            callback_data: `decrement_product-${product._id}`,
-          },
-        ],
-        [
-          {
-            text: "🛒 Buyurtma berish",
-            callback_data: `order_product-${product._id}`,
-          },
-        ],
-        user.admin
-          ? [
-              {
-                text: "✏️ Malumotni tahrirlash",
-                callback_data: `edit_product-${product._id}`,
-              },
-              {
-                text: "🗑 Malumotni o'chirish",
-                callback_data: `delete_product-${product._id}`,
-              },
-            ]
-          : [],
+  const keyboard = {
+    inline_keyboard: [
+      [
+        {
+          text: "+",
+          callback_data: `increment_product-${product._id}-${counter}`,
+        },
+        {
+          text: counter,
+          callback_data: "counter",
+        },
+        {
+          text: "-",
+          callback_data: `decrement_product-${product._id}-${counter}`,
+        },
       ],
-    },
-  });
+      [
+        {
+          text: "🛒 Buyurtma berish",
+          callback_data: `order_product-${product._id}-${counter}`,
+        },
+      ],
+      user.admin
+        ? [
+            {
+              text: "✏️ Malumotni tahrirlash",
+              callback_data: `edit_product-${product._id}`,
+            },
+            {
+              text: "🗑 Malumotni o'chirish",
+              callback_data: `delete_product-${product._id}`,
+            },
+          ]
+        : [],
+    ],
+  };
+
+  if (messageId > 0) {
+    bot.editMessageReplyMarkup(keyboard, {
+      chat_id: chatId,
+      message_id: messageId,
+    });
+  } else {
+    bot.sendPhoto(chatId, product.img, {
+      caption,
+      parse_mode: "HTML",
+      reply_markup: keyboard,
+    });
+  }
 };

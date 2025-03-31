@@ -7,6 +7,7 @@ import {
   pagination_category,
   show_category,
 } from "./helpers/category.js";
+import { delete_order, order_product } from "./helpers/order.js";
 import { new_product, show_product } from "./helpers/products.js";
 
 bot.on("callback_query", (query) => {
@@ -38,5 +39,26 @@ bot.on("callback_query", (query) => {
   if (data.includes("show_product-")) {
     const id = data.split("-")[1];
     show_product(chatId, id);
+  }
+  if (data.includes("increment_product-")) {
+    let id = data.split("-");
+    show_product(chatId, id[1], +id[2] + 1, messageId);
+  }
+  if (data.includes("decrement_product-")) {
+    let id = data.split("-");
+    if (+id[2] > 1) {
+      show_product(chatId, id[1], +id[2] - 1, messageId);
+    }
+  }
+  if (data.includes("order_product-")) {
+    let id = data.split("-");
+    order_product(chatId, id[1], id[2]);
+  }
+  if (data.includes("delete_order-")) {
+    let id = data.split("-")[1];
+    if (!id) {
+      return bot.sendMessage("Malumot xato");
+    }
+    delete_order(chatId, id, messageId);
   }
 });
