@@ -7,6 +7,7 @@ import {
   pagination_category,
   show_category,
 } from "./helpers/category.js";
+import { new_product, show_product } from "./helpers/products.js";
 
 bot.on("callback_query", (query) => {
   const { data } = query;
@@ -29,5 +30,13 @@ bot.on("callback_query", (query) => {
   if (data.includes("edit_category-")) {
     const id = data.split("-")[1];
     editCategory(chatId, id);
+  }
+  if (data.includes("new_product-")) {
+    const id = data.split("-")[1];
+    new_product(chatId, id);
+  }
+  if (data.includes("show_product-")) {
+    const id = data.split("-")[1];
+    show_product(chatId, id);
   }
 });

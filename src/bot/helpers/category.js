@@ -3,6 +3,7 @@ import Category from "../../schmea/category.schema.js";
 import Users from "../../schmea/users.schema.js";
 import bot from "../bot.js";
 import Products from "../../schmea/products.schema.js";
+import { clear_draft_product } from "./products.js";
 
 export const get_all_category = async (chatId, page = 1, messageId = null) => {
   const user = await Users.findOne({ chatId });
@@ -145,8 +146,19 @@ export const pagination_category = async (chatId, data, messageId) => {
 };
 
 export const show_category = async (chatId, id) => {
+  clear_draft_product();
   const findCategory = await Category.findById(id);
   const user = await Users.findOne({ chatId });
+  const products = await Products.find({ status: 1, category: id }).populate(
+    "category"
+  );
+  let list = products.map((value) => [
+    {
+      text: value.title,
+      callback_data: `show_product-${value._id}`,
+    },
+  ]);
+
   await Users.findOneAndUpdate(
     user._id,
     {
@@ -170,13 +182,16 @@ export const show_category = async (chatId, id) => {
     [
       {
         text: "Yangi mahsulot",
-        callback_data: "new_product",
+        callback_data: `new_product-${findCategory._id}`,
       },
     ],
   ];
   bot.sendMessage(chatId, `${findCategory.title} turkumidagi mahulotlar: `, {
     reply_markup: {
-      inline_keyboard: user.admin ? adminShowCategory : userShowCategory,
+      inline_keyboard: [
+        ...list,
+        ...(user.admin ? adminShowCategory : userShowCategory),
+      ],
     },
   });
 };
@@ -247,7 +262,6 @@ export const editCategory = async (chatId, id) => {
 };
 
 export const saveCategory = async (chatId, title) => {
-  console.log(title);
   const user = await Users.findOne({ chatId });
   await Users.findOneAndUpdate(
     user._id,
@@ -257,11 +271,10 @@ export const saveCategory = async (chatId, title) => {
     { new: true }
   );
   const id = user.action.split("-")[1];
-  console.log(id);
   await Category.findOneAndUpdate(
     { _id: id },
     { $set: { title } },
     { new: true }
   );
-  bot.sendMessage(chatId, "Turkum yangilandi menyudan tanlang" );
+  bot.sendMessage(chatId, "Turkum yangilandi menyudan tanlang");
 };

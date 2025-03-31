@@ -8,10 +8,8 @@ const productsSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Category",
   },
-  status: {
-    type: Boolean,
-    default: false,
-  },
+  status: Number,
+  text: String,
 });
 
 const Products = model("Proudcts", productsSchema);

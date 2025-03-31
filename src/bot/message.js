@@ -5,30 +5,54 @@ import {
   get_all_category,
   saveCategory,
 } from "./helpers/category.js";
+import { add_products } from "./helpers/products.js";
 import { request_contact, start } from "./helpers/start.js";
 import { get_all_user } from "./helpers/users.js";
 
 bot.on("message", async (msg) => {
   const chatId = msg.from.id;
   const user = await Users.findOne({ chatId });
-  if (msg.text === "/start") { 
+  if (msg.text === "/start") {
     start(msg);
   }
   if (user) {
     if (user.action === "request_connecct" && !user.phone_number) {
-      request_contact(msg);
+      return request_contact(msg);
     }
     if (msg.text === "Foydalanuvchilar") {
-      get_all_user(msg);
+      return get_all_user(msg);
     }
     if (msg.text === "Katalog") {
-      get_all_category(msg.chat.id);
+      return get_all_category(msg.chat.id);
     }
     if (user.action === "add_category") {
-      add_category(msg);
+      return add_category(msg);
     }
     if (user.action.includes("edit_category-")) {
-      saveCategory(chatId, msg.text);
+      return saveCategory(chatId, msg.text);
+    }
+    if (user.action.includes("new_product_title")) {
+      return add_products(chatId, msg.text, "title");
+    }
+    if (user.action.includes("new_product_price")) {
+      return add_products(chatId, msg.text, "price");
+    }
+    if (user.action.includes("new_product_img")) {
+      if (msg.document) {
+        return bot.sendMessage(
+          chatId,
+          "❌ Rasmni file sifatida emas, rasm ko‘rinishida yuboring!"
+        );
+      }
+      if (!msg.photo || msg.photo.length === 0) {
+        return bot.sendMessage(chatId, "❌ Iltimos, haqiqiy rasm yuboring!");
+      }
+
+      let file_id = msg.photo[msg.photo.length - 1].file_id;
+      return add_products(chatId, file_id, "img");
+    }
+    if (user.action.includes("new_product_text")) {
+      return add_products(chatId, msg.text, "text");
     }
   }
 });
