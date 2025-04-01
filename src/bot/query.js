@@ -9,7 +9,6 @@ import {
 } from "./helpers/category.js";
 import { delete_order, order_product } from "./helpers/order.js";
 import { new_product, show_product } from "./helpers/products.js";
-
 bot.on("callback_query", (query) => {
   const { data } = query;
   const chatId = query.from.id;

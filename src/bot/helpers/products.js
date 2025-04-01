@@ -123,16 +123,34 @@ export const show_product = async (
     ],
   };
 
-  if (messageId > 0) {
-    bot.editMessageReplyMarkup(keyboard, {
-      chat_id: chatId,
-      message_id: messageId,
-    });
-  } else {
-    bot.sendPhoto(chatId, product.img, {
-      caption,
-      parse_mode: "HTML",
-      reply_markup: keyboard,
-    });
+  try {
+    if (messageId) {
+      // Xabarni yangilashga harakat qilamiz
+      await bot.editMessageMedia(
+        {
+          type: "photo",
+          media: product.img,
+          caption: caption,
+          parse_mode: "HTML",
+        },
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          reply_markup: keyboard,
+        }
+      );
+    } else {
+      // Yangi xabar yuborish
+      await bot.sendPhoto(chatId, product.img, {
+        caption,
+        parse_mode: "HTML",
+        reply_markup: keyboard,
+      });
+    }
+  } catch (error) {
+    console.error("❌ Xabarni yangilashda xatolik:", error.message);
+    if (error.message.includes("message is not modified")) {
+      return;
+    }
   }
 };
